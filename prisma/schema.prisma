@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model TimeEntry {
+  id              String     @id @default(cuid())
+  description     String     @default("")
+  date            String     // YYYY-MM-DD in local time
+  startTime       String?    // HH:mm in local time
+  endTime         String?    // HH:mm in local time
+  durationSeconds Int
+  billable        Boolean    @default(false)
+  paid            Boolean    @default(false)
+  project         Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId       String?
+  tags            TagEntry[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Project {
+  id         String      @id @default(cuid())
+  name       String
+  color      String      @default("slate")
+  client     Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId   String?
+  entries    TimeEntry[]
+  statements Statement[]
+  createdAt  DateTime    @default(now())
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  projects  Project[]
+  createdAt DateTime  @default(now())
+}
+
+model Tag {
+  id      String     @id @default(cuid())
+  name    String     @unique
+  entries TagEntry[]
+}
+
+model TagEntry {
+  tag     Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId   String
+  entry   TimeEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entryId String
+
+  @@id([tagId, entryId])
+}
+
+model Statement {
+  id        String   @id @default(cuid())
+  title     String
+  dateFrom  String   // YYYY-MM-DD
+  dateTo    String   // YYYY-MM-DD
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+  slug      String   @unique
+  createdAt DateTime @default(now())
+}
