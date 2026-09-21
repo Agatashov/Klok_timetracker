@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getStatementBySlug, getStatementEntries } from '@/lib/actions/statements'
+import { getStatementBySlug, getStatementEntries } from '@/lib/actions'
 import { formatDuration } from '@/lib/duration'
 import { formatDateShort, formatDate } from '@/lib/date'
 import { getProjectColor } from '@/lib/utils'
@@ -24,12 +24,10 @@ export default async function PublicStatementPage({ params }: PageProps) {
   const entries = await getStatementEntries(stmt.dateFrom, stmt.dateTo, stmt.projectId)
 
   const totalSeconds = entries.reduce((s, e) => s + e.durationSeconds, 0)
-  const billableSeconds = entries.filter(e => e.billable).reduce((s, e) => s + e.durationSeconds, 0)
   const paidSeconds = entries.filter(e => e.paid).reduce((s, e) => s + e.durationSeconds, 0)
   const unpaidSeconds = totalSeconds - paidSeconds
   const activeDays = new Set(entries.map(e => e.date)).size
   const avgDaily = activeDays > 0 ? Math.round(totalSeconds / activeDays) : 0
-  const billablePct = totalSeconds > 0 ? Math.round((billableSeconds / totalSeconds) * 100) : 0
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--background)' }}>
@@ -84,15 +82,13 @@ export default async function PublicStatementPage({ params }: PageProps) {
         </div>
 
         {/* Summary tiles */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
           {[
             { label: 'Total hours', value: formatDuration(totalSeconds), accent: 'var(--accent)' },
-            { label: 'Billable', value: formatDuration(billableSeconds), sub: `${billablePct}% of total`, accent: 'var(--success)' },
             { label: 'Paid', value: formatDuration(paidSeconds), accent: '#10B981' },
             { label: 'Unpaid', value: formatDuration(unpaidSeconds), accent: '#F59E0B' },
             { label: 'Active days', value: String(activeDays), accent: '#06B6D4' },
-            { label: 'Avg per day', value: activeDays > 0 ? formatDuration(avgDaily) : '—', accent: '#8B5CF6' },
-          ].map(({ label, value, sub, accent }) => (
+          ].map(({ label, value, accent }) => (
             <div
               key={label}
               className="rounded-2xl border p-4 relative overflow-hidden"
@@ -111,7 +107,6 @@ export default async function PublicStatementPage({ params }: PageProps) {
               >
                 {value}
               </p>
-              {sub && <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{sub}</p>}
             </div>
           ))}
         </div>
@@ -184,9 +179,6 @@ export default async function PublicStatementPage({ params }: PageProps) {
                           <span style={{ color: 'var(--foreground)' }}>
                             {entry.description || <span style={{ color: 'var(--faint)' }}>—</span>}
                           </span>
-                          {entry.billable && (
-                            <span className="ml-1.5 text-xs font-bold" style={{ color: 'var(--success)' }}>$</span>
-                          )}
                         </td>
                         <td className="px-5 py-3 whitespace-nowrap">
                           {entry.project ? (

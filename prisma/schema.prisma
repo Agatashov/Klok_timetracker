@@ -14,7 +14,6 @@ model TimeEntry {
   startTime       String?    // HH:mm in local time
   endTime         String?    // HH:mm in local time
   durationSeconds Int
-  billable        Boolean    @default(false)
   paid            Boolean    @default(false)
   project         Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
   projectId       String?

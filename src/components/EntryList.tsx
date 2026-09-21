@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Modal } from './Modal'
 import { formatDuration } from '@/lib/duration'
 import { formatDate, isToday, isYesterday } from '@/lib/date'
-import { deleteEntry, toggleEntryPaid } from '@/lib/actions/entries'
+import { deleteEntry, toggleEntryPaid } from '@/lib/actions'
 import { getProjectColor, cn } from '@/lib/utils'
 import { EntryForm } from './EntryForm'
 import type { Project, Tag, Client, TimeEntry, TagEntry } from '@prisma/client'
@@ -76,8 +77,33 @@ export function EntryList({ groups, projects, tags }: Props) {
     setTogglingPaidId(null)
   }
 
+  const editingEntry = editingId
+    ? dates.flatMap(d => groups[d]).find(e => e.id === editingId)
+    : null
+
   return (
     <div className="flex flex-col gap-7">
+      {editingEntry && (
+        <Modal title="Edit entry" onClose={() => setEditingId(null)}>
+          <EntryForm
+            projects={projects}
+            tags={tags}
+            initialData={{
+              id: editingEntry.id,
+              description: editingEntry.description,
+              date: editingEntry.date,
+              startTime: editingEntry.startTime,
+              endTime: editingEntry.endTime,
+              durationSeconds: editingEntry.durationSeconds,
+              projectId: editingEntry.projectId,
+              tagIds: editingEntry.tags.map(t => t.tagId),
+            }}
+            mode="edit"
+            onDone={() => setEditingId(null)}
+          />
+        </Modal>
+      )}
+
       {dates.map(date => (
         <div key={date}>
           {/* Day header */}
@@ -109,36 +135,14 @@ export function EntryList({ groups, projects, tags }: Props) {
             {groups[date].map((entry, i) => (
               <div key={entry.id}>
                 {i > 0 && <div className="border-t mx-4" style={{ borderColor: 'var(--border)' }} />}
-                {editingId === entry.id ? (
-                  <div className="p-4">
-                    <EntryForm
-                      projects={projects}
-                      tags={tags}
-                      initialData={{
-                        id: entry.id,
-                        description: entry.description,
-                        date: entry.date,
-                        startTime: entry.startTime,
-                        endTime: entry.endTime,
-                        durationSeconds: entry.durationSeconds,
-                        billable: entry.billable,
-                        projectId: entry.projectId,
-                        tagIds: entry.tags.map(t => t.tagId),
-                      }}
-                      mode="edit"
-                      onDone={() => setEditingId(null)}
-                    />
-                  </div>
-                ) : (
-                  <EntryRow
-                    entry={entry}
-                    onEdit={() => setEditingId(entry.id)}
-                    onDelete={() => handleDelete(entry.id)}
-                    isDeleting={deletingId === entry.id}
-                    onTogglePaid={() => handleTogglePaid(entry.id, entry.paid)}
-                    isTogglingPaid={togglingPaidId === entry.id}
-                  />
-                )}
+                <EntryRow
+                  entry={entry}
+                  onEdit={() => setEditingId(entry.id)}
+                  onDelete={() => handleDelete(entry.id)}
+                  isDeleting={deletingId === entry.id}
+                  onTogglePaid={() => handleTogglePaid(entry.id, entry.paid)}
+                  isTogglingPaid={togglingPaidId === entry.id}
+                />
               </div>
             ))}
           </div>
@@ -202,15 +206,10 @@ function EntryRow({
               {te.tag.name}
             </span>
           ))}
-          {entry.billable && (
-            <span className="text-xs font-semibold" style={{ color: 'var(--success)' }}>
-              $ billable
-            </span>
-          )}
           <button
             onClick={onTogglePaid}
             disabled={isTogglingPaid}
-            className="text-xs font-semibold px-2 py-0.5 rounded-full transition-colors disabled:opacity-50"
+            className="text-xs font-semibold px-2 py-0.5 rounded-full transition-colors hover:opacity-80 disabled:opacity-50"
             style={
               entry.paid
                 ? { background: 'rgba(16,185,129,0.12)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)' }
