@@ -247,6 +247,14 @@ export function ProjectTagPicker({
               />
             </div>
           </div>
+          {selectedTagIds.length > 0 && (
+            <div className="flex items-center justify-between px-3 py-1.5 border-b" style={{ borderColor: 'var(--border)' }}>
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--faint)' }}>Selected</span>
+              <button type="button" onClick={() => { onTagsChange([]); setOpenDropdown(null) }} className="text-xs font-semibold transition-opacity hover:opacity-70" style={{ color: 'var(--accent)' }}>
+                Clear
+              </button>
+            </div>
+          )}
           <div className="max-h-44 overflow-y-auto py-1">
             {tags.filter(t => t.name.toLowerCase().includes(newTagInput.toLowerCase())).length === 0 && !newTagInput.trim() && (
               <p className="px-3 py-2 text-xs" style={{ color: 'var(--faint)' }}>No tags yet</p>
